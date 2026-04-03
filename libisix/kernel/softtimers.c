@@ -131,6 +131,8 @@ static void handle_add( ostick_t tnow, const struct start_param* param )
 	}
 }
 
+static void cyclic_reschedule_after_fire( osvtimer_t vtimer, ostick_t tnow );
+
 //Switch timer list if overflow
 static void switch_timer_list( ostick_t tnow )
 {
@@ -142,10 +144,7 @@ static void switch_timer_list( ostick_t tnow )
 		exec_timer_callback( vtimer );
 		if( vtimer->cyclic ) 
 		{
-			vtimer->jiffies = tnow;
-			if( tnow > vtimer->jiffies + vtimer->timeout ) {
-				add_list_with_prio( tctx.pov_vtimer_list, vtimer );
-			}
+			cyclic_reschedule_after_fire( vtimer, tnow );
 		}
 	}
 	//SWAP
@@ -154,6 +153,35 @@ static void switch_timer_list( ostick_t tnow )
 		tctx.p_vtimer_list = tctx.pov_vtimer_list;
 		tctx.pov_vtimer_list = tmp;
 	}
+}
+
+/** Cyclic vtimer: after one fire at vtimer->jiffies, schedule next edges. When tnow
+ *  jumps by many jiffies (tickless catch-up) without the worker running, fire once
+ *  per missed period so callback counts match elapsed logical time. */
+static void cyclic_reschedule_after_fire( osvtimer_t vtimer, ostick_t tnow )
+{
+	if( vtimer->timeout == 0U ) {
+		add_vtimer_to_list( tnow, vtimer );
+		return;
+	}
+	ostick_t next = vtimer->jiffies + vtimer->timeout;
+	while( tnow >= next ) {
+		ostick_t tout_before = vtimer->timeout;
+		exec_timer_callback( vtimer );
+		if( !vtimer->cyclic ) {
+			return;
+		}
+		/* Variable period (e.g. isix_vtimer_mod in callback): do not coalesce more
+		 * fires at this jiffy — interval tests use get jiffies between invocations. */
+		if( vtimer->timeout != tout_before ) {
+			vtimer->jiffies = tnow;
+			add_vtimer_to_list( tnow, vtimer );
+			return;
+		}
+		next += vtimer->timeout;
+	}
+	vtimer->jiffies = next - vtimer->timeout;
+	add_vtimer_to_list( tnow, vtimer );
 }
 
 //! Handle time
@@ -172,8 +200,7 @@ static ostick_t handle_time( ostick_t tnow, bool overflow )
 		list_delete( &vtimer->inode );
 		if( vtimer->cyclic ) 
 		{
-			vtimer->jiffies = tnow;
-			add_vtimer_to_list( tnow, vtimer );
+			cyclic_reschedule_after_fire( vtimer, tnow );
 		}
 	}
 	if( !list_isempty(tctx.p_vtimer_list) ) 
@@ -409,13 +436,32 @@ int isix_schedule_work_isr( osworkfunc_t func, void* arg )
  */
 int isix_vtimer_mod( osvtimer_t timer, ostick_t new_timeout ) 
 {
-	if( !timer && !timer->cyclic ) {
+	if( !timer || !timer->cyclic ) {
 		return ISIX_EINVARG;
 	}
 	if( new_timeout == OSVTIMER_CB_CANCEL ) {
-	 	timer->cyclic = false;
+		timer->cyclic = false;
+		/* Drop handler so cyclic catch-up cannot invoke it again (e.g. sem after destroy). */
+		timer->callback = NULL;
 	} else {
 		timer->timeout = new_timeout;
 	}
 	return ISIX_EOK;
 }
+
+#if CONFIG_ISIX_TICKLESS
+ostick_t _isixp_vtimers_next_timeout_delta(ostick_t now)
+{
+	if( !tctx.worker_thread_id ) {
+		return ISIX_TIME_MAX_TICK;
+	}
+	if( list_isempty(tctx.p_vtimer_list) ) {
+		return ISIX_TIME_MAX_TICK;
+	}
+	osvtimer_t first = list_first_entry(tctx.p_vtimer_list, inode, struct isix_vtimer);
+	if( first->jiffies >= now ) {
+		return first->jiffies - now;
+	}
+	return 0U;
+}
+#endif /* CONFIG_ISIX_TICKLESS */
