@@ -1,4 +1,6 @@
 .*
+!.devcontainer/
+!.devcontainer/**
 *.dep
 *.o
 *.a

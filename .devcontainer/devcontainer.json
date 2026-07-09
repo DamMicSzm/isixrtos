@@ -1,0 +1,30 @@
+{
+	"name": "ISIX-RTOS (QEMU)",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": ".."
+	},
+	"workspaceFolder": "/workspaces/isixrtos",
+	"remoteUser": "vscode",
+	"postCreateCommand": "bash .devcontainer/scripts/post-create.sh",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools",
+				"ms-vscode.cpptools-extension-pack",
+				"mesonbuild.mesonbuild"
+			],
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "bash"
+			}
+		}
+	},
+	"forwardPorts": [
+		1234
+	],
+	"portsAttributes": {
+		"1234": {
+			"label": "QEMU GDB"
+		}
+	}
+}
