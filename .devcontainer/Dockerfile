@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	ninja-build \
 	pkg-config \
 	python3 \
+	python3-pip \
 	zlib1g-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
