@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	pkg-config \
 	python3 \
 	python3-pip \
+	python3-venv \
 	zlib1g-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
@@ -37,10 +38,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	gcc-arm-none-eabi \
 	gdb-multiarch \
 	git \
-	meson \
+	libfdt1 \
+	libpixman-1-0 \
 	ninja-build \
 	python3 \
 	python3-pip \
+	&& pip3 install --no-cache-dir 'meson>=1.2' \
 	&& rm -rf /var/lib/apt/lists/*
 
 COPY --from=qemu-builder /opt/qemu /opt/qemu
