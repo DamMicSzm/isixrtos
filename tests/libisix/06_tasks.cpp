@@ -440,7 +440,14 @@ TEST(tasks, simple_FPU_double_precision_test_without_interrupts)
 
 TEST(tasks, FPU_single_precision_two_tasks_and_interrupt)
 {
+#ifdef QEMU_NO_RCC_PERIPH
+	/* QEMU is far slower; keep coverage but avoid multi-minute IRQ+FPU stress. */
+	static constexpr auto n_loops = 100000U;
+	static constexpr auto irq_period_us = 1000U;
+#else
 	static constexpr auto n_loops = 10000000U;
+	static constexpr auto irq_period_us = 10U;
+#endif
 	using namespace tests::fpu_sp;
 	constexpr auto thr = [](int begin_val, bool& ok) -> void
 	{
@@ -475,7 +482,7 @@ TEST(tasks, FPU_single_precision_two_tasks_and_interrupt)
 			irq_failed = true;
 		}
 	};
-	auto ec = tests::detail::periodic_timer_setup(irq_fun, 10);
+	auto ec = tests::detail::periodic_timer_setup(irq_fun, irq_period_us);
 	TEST_ASSERT(ec);
 	auto th1 = isix::thread_create_and_run(2048, c_task_prio,
 			isix_task_flag_newlib, thr, 4, std::ref(res1));
