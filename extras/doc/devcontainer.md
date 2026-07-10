@@ -4,12 +4,14 @@ This project now includes a QEMU-focused devcontainer for isolated development.
 
 ## What this includes
 
-- Meson + Ninja build tools
-- `arm-none-eabi` toolchain
+- Meson (>= 1.2) + Ninja build tools
+- `arm-none-eabi` toolchain built from source (GCC + newlib)
 - Patched QEMU (`v10.1.2`) for STM32 timer fixes required by ISIX tests
 - Helper scripts for first setup and QEMU execution
 
 The Phase 1 container is intentionally focused on **QEMU workflow only**. Hardware USB flashing/debugging (OpenOCD/ST-Link passthrough) is planned for a later phase.
+
+`PATH` is configured automatically (`meson`, `arm-none-eabi-gcc`, `qemu-system-arm`).
 
 ## Quick start
 
