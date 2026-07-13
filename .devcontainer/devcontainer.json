@@ -7,7 +7,7 @@
 	"workspaceFolder": "/workspaces/isixrtos",
 	"remoteUser": "vscode",
 	"containerEnv": {
-		"PATH": "/opt/python-tools/bin:/opt/arm-none-eabi-gcc/bin:/opt/qemu/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+		"PATH": "/opt/arm-none-eabi-gcc/bin:/opt/qemu/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 	},
 	"postCreateCommand": "bash .devcontainer/scripts/post-create.sh",
 	"customizations": {

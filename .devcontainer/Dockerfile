@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim AS toolchain-builder
+FROM debian:trixie-slim AS toolchain-builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 ARG PREFIX=/opt/arm-none-eabi-gcc
@@ -26,7 +26,7 @@ WORKDIR /tmp/linux-toolchain
 ENV PREFIX="${PREFIX}"
 RUN ./build-from-source.sh
 
-FROM debian:bookworm-slim AS qemu-builder
+FROM debian:trixie-slim AS qemu-builder
 
 ARG QEMU_VERSION=v10.1.2
 ARG QEMU_PATCH_URL=http://bryndza.boff.pl/downloads/prv/qemu-${QEMU_VERSION}-STM32-fix-raise-interrupt-time.patch
@@ -56,27 +56,26 @@ RUN curl -fsSL "${QEMU_PATCH_URL}" -o /tmp/qemu.patch && patch -p1 < /tmp/qemu.p
 RUN ./configure --disable-xen --disable-werror --target-list="arm-softmmu" --prefix=/opt/qemu
 RUN make -j"$(nproc)" && make install
 
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PATH="/opt/python-tools/bin:/opt/arm-none-eabi-gcc/bin:/opt/qemu/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ENV PATH="/opt/arm-none-eabi-gcc/bin:/opt/qemu/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	ca-certificates \
 	curl \
 	git \
 	libfdt1 \
-	libglib2.0-0 \
+	libglib2.0-0t64 \
 	libisl23 \
 	libmpc3 \
 	libmpfr6 \
 	libpixman-1-0 \
+	meson \
 	ninja-build \
 	python3 \
 	python3-pip \
 	python3-venv \
-	&& python3 -m venv /opt/python-tools \
-	&& /opt/python-tools/bin/pip install --no-cache-dir 'meson>=1.2' \
 	&& rm -rf /var/lib/apt/lists/*
 
 COPY --from=toolchain-builder /opt/arm-none-eabi-gcc /opt/arm-none-eabi-gcc
@@ -86,7 +85,7 @@ RUN ldd /opt/qemu/bin/qemu-system-arm | (! grep -q 'not found') \
 	&& ldd /opt/arm-none-eabi-gcc/libexec/gcc/arm-none-eabi/*/cc1 | (! grep -q 'not found')
 
 RUN printf '%s\n' \
-	'export PATH="/opt/python-tools/bin:/opt/arm-none-eabi-gcc/bin:/opt/qemu/bin:${PATH}"' \
+	'export PATH="/opt/arm-none-eabi-gcc/bin:/opt/qemu/bin:${PATH}"' \
 	> /etc/profile.d/isixrtos-toolchain.sh \
 	&& chmod 644 /etc/profile.d/isixrtos-toolchain.sh
 
