@@ -5,7 +5,9 @@ option('enable_newlib_nano', type : 'boolean', value : false,
 option('disable_tlsf', type : 'boolean', value : false,
 	description : 'Disable default TLSF memory allocator')
 option('stack_size', type : 'integer', value : 512,
-	description : 'Define system stack size')
+	description : 'Define system (MSP) stack size; unit tests typically use 4096')
+option('cpu_load_stack_mult', type : 'integer', value : 1,
+	description : 'Multiplier for CPU-load test task stack (QEMU may need 2+)')
 option('bootloader_remap', type : 'integer', value : 0,
 	description : 'Bootloader flash remap shift in kB')
 option('crystal_hz', type : 'integer', value : -1,

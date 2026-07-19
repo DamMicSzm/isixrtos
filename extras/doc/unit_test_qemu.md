@@ -62,7 +62,8 @@ meson compile -C build
 meson setup --cross-file arm.ini --cross-file cortex/m4.ini \
 	--cross-file stm32/f405rg_qemu.ini \
 	--buildtype=debug -Doptimization=g -Db_lto=true \
-	-Dcrystal_hz=8000000 -Dtest=true build
+	-Dcrystal_hz=8000000 -Dtest=true -Dstack_size=4096 \
+	-Dcpu_load_stack_mult=4 build
 meson compile -C build
 ```
 

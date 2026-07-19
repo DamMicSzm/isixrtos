@@ -8,7 +8,7 @@ project('isix', 'c', 'cpp',
 		'b_pch=false',
 		'b_staticpic=false',
 		'b_pie=false',
-		'c_std=gnu17',
+		'c_std=gnu23',
 		'cpp_std=gnu++23',
 		'cpp_rtti=false',
 		'cpp_eh=none',
@@ -79,6 +79,7 @@ add_project_arguments(
 		'-DCONFIG_ISIX_TICKLESS',
 		'-DCONFIG_ISIX_TICKLESS_MIN_SLEEP_TICKS=2',
 		'-DCONFIG_ISIX_TICKLESS_TIMER_COMPENSATION_TICKS=1',
+		'-DCONFIG_ISIX_CPU_LOAD_STACK_MULT=' + get_option('cpu_load_stack_mult').to_string(),
 	] : [],
 	language : ['c', 'cpp']
 )
