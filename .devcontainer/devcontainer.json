@@ -1,0 +1,40 @@
+{
+	"name": "ISIX-RTOS (QEMU)",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": ".."
+	},
+	"workspaceFolder": "/workspaces/isixrtos",
+	"remoteUser": "vscode",
+	"containerEnv": {
+		"PATH": "/home/vscode/.local/bin:/opt/python-tools/bin:/opt/arm-none-eabi-gcc/bin:/opt/qemu/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+	},
+	"postCreateCommand": "bash .devcontainer/scripts/post-create.sh",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"kylinideteam.cppdebug",
+				"webfreak.debug",
+				"llvm-vs-code-extensions.vscode-clangd",
+				"mesonbuild.mesonbuild"
+			],
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "bash",
+				"clangd.path": "/home/vscode/.local/bin/clangd",
+				"clangd.checkUpdates": false,
+				"editor.gotoLocation.multipleDefinitions": "goto",
+				"editor.gotoLocation.multipleReferences": "goto",
+				"debug.allowBreakpointsEverywhere": true,
+				"debug.disassemblyView.showSourceCode": true
+			}
+		}
+	},
+	"forwardPorts": [
+		1234
+	],
+	"portsAttributes": {
+		"1234": {
+			"label": "QEMU GDB"
+		}
+	}
+}

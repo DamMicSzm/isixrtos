@@ -1,0 +1,10 @@
+{
+	"clangd.path": "/home/vscode/.local/bin/clangd",
+	"clangd.checkUpdates": false,
+	"editor.gotoLocation.multipleDefinitions": "goto",
+	"editor.gotoLocation.multipleReferences": "goto",
+	"debug.allowBreakpointsEverywhere": true,
+	"debug.inlineValues": true,
+	"debug.showBreakpointsInOverviewRuler": true,
+	"debug.disassemblyView.showSourceCode": true
+}
