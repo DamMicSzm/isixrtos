@@ -1,47 +1,70 @@
 # Devcontainer quick start (Phase 1)
 
-This project now includes a QEMU-focused devcontainer for isolated development.
+QEMU-focused Dev Container for isolated ISIX development.
 
-Base image: **Debian 13 (trixie)** slim (current stable).
+Base image: **Debian 13 (trixie)** slim. Runtime tag: **`isixrtos-qemu-dev:dev`**.
 
 ## What this includes
 
-- Meson (>= 1.2) + Ninja build tools
+- Meson (>= 1.2) + Ninja
 - `arm-none-eabi` toolchain built from source (GCC 16.1, newlib, gdb)
 - Patched QEMU (`v10.1.2`) for STM32 timer fixes required by ISIX tests
+- System **clangd** (`/usr/bin/clangd`) for navigation
 - Helper scripts for first setup and QEMU execution
 
-The Phase 1 container is intentionally focused on **QEMU workflow only**. Hardware USB flashing/debugging (OpenOCD/ST-Link passthrough) is planned for a later phase.
-
-`PATH` is configured automatically (`meson`, `arm-none-eabi-gcc`, `qemu-system-arm`).
+Phase 1 is **QEMU only**. Hardware USB flashing/debugging (OpenOCD/ST-Link) is later.
 
 ## Quick start
 
-1. Open the repository in Cursor/VS Code.
-2. Reopen folder in container.
-3. Wait until the container image is built.
-4. Run:
+1. Open the repository in Cursor / VS Code (Docker Desktop, or Podman with a Docker-compatible API).
+2. **Dev Containers: Reopen in Container**.
+3. First open runs `image.sh ensure` on the **host** — building GCC + QEMU can take a long time.
+   Dangling layers from interrupted builds are pruned automatically.
+4. Wait for `post-create` (configure + editor configs). Extensions should install from
+   `devcontainer.json`; if not, open Extensions → `@recommended` and install.
+5. Build and run tests:
 
 ```bash
-./configure build qemu
 meson compile -C build
 bash .devcontainer/scripts/qemu-run.sh
 ```
 
+(`post-create` already runs `./configure build qemu` when `build/` is missing.)
+
+### Rebuild the image (toolchain / Dockerfile changed)
+
+IDE **Rebuild Container** alone does **not** rebuild the Dockerfile (the config uses a
+tagged local image). Rebuild explicitly, then reopen:
+
+```bash
+.devcontainer/scripts/image.sh ensure --force
+# then: Dev Containers → Rebuild Container
+```
+
+### Disk full after a failed / cancelled build
+
+```bash
+.devcontainer/scripts/image.sh prune        # dangling layers + stopped containers
+.devcontainer/scripts/image.sh prune --all  # also unused images + build cache
+```
+
 ## Debug in VS Code / Cursor (QEMU)
 
-On container create, `post-create.sh` copies QEMU-only debug configs from
-`.devcontainer/vscode/` into `.vscode/` (not used outside the devcontainer).
+On create, `post-create.sh` copies QEMU-only configs from `.devcontainer/vscode/` into `.vscode/`.
 
-### Required extensions (auto-installed in devcontainer)
+### Required extensions (from `devcontainer.json`)
 
 | Extension | ID | Role |
 |-----------|-----|------|
-| **C/C++ Debug** | `kylinideteam.cppdebug` | `cppdbg` launch configs, breakpoints, **Disassembly View** |
-| **Native Debug** | `webfreak.debug` | Alternative `gdb` launch configs, good for asm stepping |
-| **clangd** | `llvm-vs-code-extensions.vscode-clangd` | Go to definition (not debug) |
+| **clangd** | `llvm-vs-code-extensions.vscode-clangd` | Go to definition / references |
+| **Meson** | `mesonbuild.mesonbuild` | Meson syntax / tasks |
+| **Native Debug** | `webfreak.debug` | GDB launch configs, asm stepping |
+| **C/C++ Debug** | `kylinideteam.cppdebug` | `cppdbg` + Disassembly View |
 
-`ms-vscode.cpptools` is not available in Cursor; use `kylinideteam.cppdebug` instead.
+`ms-vscode.cpptools` is not available in Cursor; use the extensions above.
+
+If clangd shows errors about a missing binary, settings must use **`/usr/bin/clangd`**
+(image package) — not `~/.local/bin/clangd`.
 
 ### Start debugging
 
@@ -63,46 +86,45 @@ During an active debug session:
 2. Or use **Step Into** (`F11`) — with `disassemble-next-line on`, GDB shows asm next to source
 3. For libgcc helpers (`__aeabi_uldivmod` / `bpabi.S`), use **Step Instruction** in the Disassembly view
 
-Configs also enable `debug.allowBreakpointsEverywhere` so you can break on asm addresses.
+### Troubleshooting (debug)
 
-## C/C++ navigation (Go to Definition, Find References)
+| Symptom | Cause / fix |
+|---------|-------------|
+| `TargetArchitecture not detected, assuming x86_64` | Harmless host-side warning; configs set `targetArchitecture: arm` |
+| Stops at `crt0.c` then `exited with code 0` | Tests finished (`SYS_EXIT`). Break before second Continue, or stop at `main` |
+| GDB cannot connect | Start QEMU with `-S -gdb tcp::1234` (`qemu-gdb-server.sh`) |
+| Session ends when tests complete | Expected with `-semihosting`; restart QEMU and attach again |
 
-Cursor does not ship Microsoft's `ms-vscode.cpptools` extension. The devcontainer installs **clangd** instead.
+Hardware/OpenOCD configs remain in `extras/scripts/vscode_tpl/` (Phase 2).
 
-1. Run `./configure build qemu` at least once so `build/compile_commands.json` exists.
-2. **Trust the workspace** if prompted (clangd does not run in Restricted Mode).
-3. Reload the window after container create: **Developer: Reload Window**.
-4. Wait for clangd to finish indexing (status bar: "clangd: idle").
-5. Right-click a symbol → **Go to Definition** / **Go to References**, or use F12 / Shift+F12.
+## C/C++ navigation (clangd)
 
-If navigation is empty or wrong, rebuild compile commands:
+1. Ensure `build/compile_commands.json` exists (`./configure build qemu` / `post-create`).
+2. **Trust the workspace** if prompted.
+3. Reload once after create: **Developer: Reload Window**.
+4. Wait for indexing (status: `clangd: idle`), then F12 / Shift+F12.
+
+If navigation is empty:
 
 ```bash
 meson compile -C build
 ```
 
-Then run **Developer: Reload Window** so clangd picks up changes.
+Then **Developer: Reload Window**.
 
-### Troubleshooting
-
-| Symptom | Cause / fix |
-|---------|-------------|
-| `TargetArchitecture not detected, assuming x86_64` | Harmless host-side warning; configs set `targetArchitecture: arm` and `set architecture arm` in GDB |
-| Stops at `crt0.c` then `exited with code 0` | Firmware finished the full test suite and called semihosting `SYS_EXIT`. Set breakpoints **before** the second Continue, or use the preset `break main` and stop again there |
-| GDB cannot connect | QEMU must be started with `-S -gdb tcp::1234` (use `qemu-gdb-server.sh`) |
-| Session ends when tests complete | Expected with `-semihosting`; restart QEMU and attach again |
-
-Hardware/OpenOCD debug configs remain in `extras/scripts/vscode_tpl/` (Phase 2).
+| Symptom | Fix |
+|---------|-----|
+| `clangd.path` / binary not found | Use `/usr/bin/clangd` (see `.devcontainer/vscode/settings.json`) |
+| Extension missing | Extensions → `@recommended` → install clangd |
+| Wrong / empty results | Rebuild `compile_commands.json`, reload window |
 
 ## Run with GDB wait (manual)
-
-Use this if you want to attach `arm-none-eabi-gdb` on port `1234`:
 
 ```bash
 .devcontainer/scripts/qemu-gdb-server.sh
 ```
 
-Or equivalently:
+Or:
 
 ```bash
 qemu-system-arm -M olimex-stm32-h405 -semihosting \
@@ -111,23 +133,45 @@ qemu-system-arm -M olimex-stm32-h405 -semihosting \
 
 ## Notes for host operating systems
 
-- Linux: fully supported for this QEMU-only phase.
-- Windows (WSL2): supported when Docker is integrated with WSL2.
-- macOS: supported for QEMU-only workflow.
+- Linux: Docker or Podman (Docker-compatible socket for the IDE).
+- Windows (WSL2): Docker integrated with WSL2.
+- macOS: Docker Desktop or Podman.
 
 ## Keep host workflow unchanged
 
-Devcontainer support is optional. Native host workflow remains valid:
+Dev Container support is optional:
 
 ```bash
 ./configure build qemu
 meson compile -C build
 ```
 
-## Cleanup
+## Container image (Docker or Podman)
 
-To fully remove the environment:
+One helper — `.devcontainer/scripts/image.sh` — is used by **both** the IDE
+(`initializeCommand` → `ensure`) and the CLI.
 
-- delete the devcontainer instance
-- remove generated docker image/layers if desired
-- remove `build/` directory if you want a clean repo state
+```bash
+.devcontainer/scripts/image.sh ensure             # first open / reuse tagged image
+.devcontainer/scripts/image.sh ensure --force     # rebuild GCC/QEMU image
+.devcontainer/scripts/image.sh build              # same as force rebuild
+CONTAINER_ENGINE=podman .devcontainer/scripts/image.sh build
+
+.devcontainer/scripts/image.sh prune
+.devcontainer/scripts/image.sh prune --all
+.devcontainer/scripts/image.sh info
+```
+
+Default tag: `isixrtos-qemu-dev:dev` (OCI title/description labels).
+Multi-stage leftovers are pruned after success or failure.
+
+> Cursor/VS Code need a Docker-compatible API. On Fedora/RHEL use `podman-docker`
+> or point `DOCKER_HOST` at the Podman socket. CLI-only builds can set
+> `CONTAINER_ENGINE=podman` directly.
+
+### Fully remove the environment
+
+- Delete the Dev Container in the IDE
+- `.devcontainer/scripts/image.sh prune --all`
+- Remove leftover `vsc-*` images if the IDE left any
+- Remove `build/` for a clean repo tree
