@@ -2,10 +2,12 @@
 
 This project now includes a QEMU-focused devcontainer for isolated development.
 
+Base image: **Debian 13 (trixie)** slim (current stable).
+
 ## What this includes
 
 - Meson (>= 1.2) + Ninja build tools
-- `arm-none-eabi` toolchain built from source (GCC + newlib)
+- `arm-none-eabi` toolchain built from source (GCC 16.1, newlib, gdb)
 - Patched QEMU (`v10.1.2`) for STM32 timer fixes required by ISIX tests
 - Helper scripts for first setup and QEMU execution
 

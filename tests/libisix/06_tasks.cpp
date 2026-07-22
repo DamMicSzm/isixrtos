@@ -79,13 +79,9 @@ namespace
 	}
 }
 
-#ifndef CONFIG_ISIX_CPU_LOAD_STACK_MULT
-#define CONFIG_ISIX_CPU_LOAD_STACK_MULT 1
-#endif
-
 namespace
 {
-	constexpr auto c_stack_size = ISIX_MIN_STACK_SIZE * CONFIG_ISIX_CPU_LOAD_STACK_MULT;
+	constexpr auto c_stack_size = ISIX_MIN_STACK_SIZE * 2;
 	constexpr auto c_task_prio = 3;
 	constexpr auto c_stack_margin = 100;
 }
@@ -228,7 +224,7 @@ TEST(tasks, CPU_load_api)
 	static constexpr auto epsilon = 50;
 	for (iload=10; iload<=99; iload+=10) {
 		auto thr = isix::thread_create_and_run(
-			c_stack_size * CONFIG_ISIX_CPU_LOAD_STACK_MULT, 1, 0, cpuload_task, iload);
+			c_stack_size, 1, 0, cpuload_task, iload);
 		TEST_ASSERT(thr);
 		isix::wait_ms(2000);
 		const auto cpul = isix::cpuload();

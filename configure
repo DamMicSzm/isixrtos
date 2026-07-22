@@ -19,13 +19,10 @@ Meson setup uses <builddir> as the output directory (any path; commonly build).
 Options (before builddir; defaults match unit_test_qemu.md):
   --crystal-hz N     -Dcrystal_hz=N (default 8000000)
   --buildtype T      meson --buildtype (default debug)
-  --no-test          -Dtest=false (default: -Dtest=true -Dstack_size=4096)
+  --no-test          -Dtest=false (default: -Dtest=true)
   --no-lto           -Db_lto=false (default: -Db_lto=true)
   -v, --verbose      shell set -x before meson setup
   -h, --help
-
-Mode extras (set by configure):
-  qemu               also -Dcpu_load_stack_mult=4
 
 Examples:
   ./configure build disco
@@ -141,8 +138,6 @@ case "$MODE" in
 	qemu)
 		MCU_REL="stm32/f405rg_qemu.ini"
 		OPT_LEVEL="g"
-		# wait_us + C++ thread wrapper need a larger task stack on QEMU
-		MODEOPT=(-Dcpu_load_stack_mult=4 -Dstack_size=4096)
 		;;
 	mcu)
 		if [[ -z "${1:-}" ]]; then
